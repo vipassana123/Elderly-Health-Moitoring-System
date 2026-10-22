@@ -1,3 +1,0 @@
-OneWire
-DallasTemperature
-LiquidCrystal I2C
