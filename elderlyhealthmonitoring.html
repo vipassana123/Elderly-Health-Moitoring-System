@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elderly Health Monitoring System</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 25px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fa;
+            color: #12304a;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1 {
+           
+            background: #123c3a;
+            color: white;
+            padding: 22px 5vw;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            }
+
+        .subtitle {
+            color: #627487;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #123c3a;
+            border-radius: 4px;
+            padding-bottom: 8px;
+        }
+
+        .connection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding: 18px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #0000000d;
+        }
+
+        input {
+            flex: 1;
+            min-width: 180px;
+            padding: 11px;
+            border: 1px solid #ccd6e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 11px 18px;
+            border: none;
+            border-radius: 6px;
+            background: #1769aa;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #10558d;
+        }
+
+        #connectionStatus {
+            width: 100%;
+            font-size: 13px;
+            color: #627487;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            padding: 22px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #0000000d;
+        }
+
+        .card h3 {
+            margin: 0 0 14px;
+            color: #52677b;
+            font-size: 15px;
+        }
+
+        .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1769aa;
+        }
+
+        .unit {
+            font-size: 14px;
+            color: #627487;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .chart-card {
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #0000000d;
+            min-width: 0;
+        }
+
+        .chart-card h3 {
+            margin-top: 0;
+        }
+
+        .chart-card canvas {
+            width: 100% !important;
+            max-height: 300px;
+        }
+
+        .alert {
+            border-left: 5px solid #2e9d68;
+        }
+
+        .alert.warning {
+            border-left-color: #e39a25;
+        }
+
+        .alert.danger {
+            border-left-color: #d64545;
+        }
+
+        .alert p {
+            margin-bottom: 0;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 22px;
+            color: #627487;
+            font-size: 12px;
+        }
+
+        @media (max-width: 750px) {
+            body {
+                padding: 14px;
+            }
+
+            .cards,
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+   
+    <h1>♥ Elderly Health Monitoring System</h1>
+    <p class="subtitle">
+        Real-time health monitoring powered by ESP32 and ThingSpeak
+    </p>
+
+    <div class="connection">
+        <input
+            type="text"
+            id="channelId"
+            value="3545336"
+            placeholder="ThingSpeak Channel ID"
+        >
+
+        <input
+            type="password"
+            id="readApiKey"
+            placeholder="Read API Key (private channels only)"
+        >
+
+        <button id="connectButton" type="button">
+            Connect
+        </button>
+
+        <div id="connectionStatus" role="status">
+            Not connected. Click Connect to load data.
+        </div>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <h3>Body Temperature</h3>
+            <div class="value">
+                <span id="temperature">--</span>
+                <span class="unit">°F</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Blood Oxygen (SpO₂)</h3>
+            <div class="value">
+                <span id="oxygen">--</span>
+                <span class="unit">%</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Heart Rate</h3>
+            <div class="value">
+                <span id="heartRate">--</span>
+                <span class="unit">BPM</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="cards">
+        <div class="card alert" id="oxygenAlert">
+            <h3>Low Oxygen Alert</h3>
+            <p id="oxygenStatus">Waiting for data...</p>
+        </div>
+
+        <div class="card alert" id="temperatureAlert">
+            <h3>High Temperature Alert</h3>
+            <p id="status">Waiting for data...</p>
+        </div>
+
+        <div class="card alert" id="heartAlert">
+            <h3>Heart Rate Alert</h3>
+            <p id="heartStatus">Waiting for data...</p>
+        </div>
+    </div>
+
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3>SpO₂ History</h3>
+            <canvas id="oxygenChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3>Heart Rate History</h3>
+            <canvas id="heartRateChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3>Temperature History</h3>
+            <canvas id="temperatureChart"></canvas>
+        </div>
+    </div>
+
+    <p class="footer">
+        Dashboard refreshes every 20 seconds. Readings and alerts depend on
+        the data sent by your ESP32. This dashboard is for monitoring and
+        does not replace professional medical assessment.
+    </p>
+</div>
+
+<script>
+    const REFRESH_INTERVAL = 20000;
+    let refreshTimer = null;
+    let requestInProgress = false;
+
+    function createChart(canvasId, label, colour, unit) {
+        const context = document.getElementById(canvasId).getContext("2d");
+
+        return new Chart(context, {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [{
+                    label: label,
+                    data: [],
+                    borderColor: colour,
+                    backgroundColor: colour + "22",
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    spanGaps: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: false,
+                interaction: {
+                    intersect: false,
+                    mode: "index"
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: "Time"
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: unit
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const oxygenChart = createChart(
+        "oxygenChart", "SpO₂", "#1769aa", "SpO₂ (%)"
+    );
+
+    const heartRateChart = createChart(
+        "heartRateChart", "Heart Rate", "#2e9d68", "BPM"
+    );
+
+    const temperatureChart = createChart(
+        "temperatureChart", "Temperature", "#e39a25", "°F"
+    );
+
+    function setAlert(cardId, textId, message, level) {
+        const card = document.getElementById(cardId);
+        const text = document.getElementById(textId);
+
+        card.classList.remove("warning", "danger");
+
+        if (level === "warning" || level === "danger") {
+            card.classList.add(level);
+        }
+
+        text.textContent = message;
+    }
+
+    function displayNumber(elementId, value, decimals = 1) {
+        const element = document.getElementById(elementId);
+
+        if (value === null || value === undefined || value === "") {
+            element.textContent = "--";
+            return;
+        }
+
+        const number = Number(value);
+
+        element.textContent = Number.isFinite(number)
+            ? number.toFixed(decimals)
+            : "--";
+    }
+
+    function updateCharts(feeds) {
+        const labels = feeds.map(feed => {
+            const date = new Date(feed.created_at);
+
+            return Number.isNaN(date.getTime())
+                ? "--"
+                : date.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                });
+        });
+
+        function updateChart(chart, fieldName) {
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = feeds.map(feed => {
+                if (
+                    feed[fieldName] === null ||
+                    feed[fieldName] === undefined ||
+                    feed[fieldName] === ""
+                ) {
+                    return null;
+                }
+
+                const value = Number(feed[fieldName]);
+
+                return Number.isFinite(value) ? value : null;
+            });
+
+            chart.update();
+        }
+
+        updateChart(oxygenChart, "field3");
+        updateChart(heartRateChart, "field2");
+        updateChart(temperatureChart, "field1");
+    }
+
+    async function loadData() {
+        if (requestInProgress) return;
+
+        const channelId = document.getElementById("channelId")
+            .value.trim();
+
+        const readApiKey = document.getElementById("readApiKey")
+            .value.trim();
+
+        const status = document.getElementById("connectionStatus");
+
+        if (!channelId) {
+            status.textContent = "Please enter your ThingSpeak Channel ID.";
+            return;
+        }
+
+        requestInProgress = true;
+        status.textContent = "Connecting to ThingSpeak...";
+
+        try {
+            const url = new URL(
+                `https://api.thingspeak.com/channels/${encodeURIComponent(channelId)}/feeds.json`
+            );
+
+            url.searchParams.set("results", "20");
+
+            if (readApiKey) {
+                url.searchParams.set("api_key", readApiKey);
+            }
+
+            const response = await fetch(url.toString(), {
+                cache: "no-store"
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!Array.isArray(data.feeds) || data.feeds.length === 0) {
+                throw new Error(
+                    "No readings found. Check the channel ID, Read API Key and ESP32 uploads."
+                );
+            }
+
+            const feeds = data.feeds;
+            const latest = feeds[feeds.length - 1];
+
+            // Actual ESP32-to-ThingSpeak field mapping:
+            // field1 = Temperature in Fahrenheit
+            // field2 = Heart rate in BPM
+            // field3 = SpO2 percentage
+            // field4 = Low oxygen flag
+            // field5 = High temperature flag
+            // field6 = Heart-rate status (-1, 0, 1)
+
+            displayNumber("temperature", latest.field1);
+            displayNumber("heartRate", latest.field2, 0);
+            displayNumber("oxygen", latest.field3);
+
+            const oxygenWarning = Number(latest.field4);
+            const temperatureWarning = Number(latest.field5);
+            const heartStatus = Number(latest.field6);
+
+            if (latest.field4 === "" || latest.field4 == null) {
+                setAlert(
+                    "oxygenAlert", "oxygenStatus",
+                    "No alert data available", "warning"
+                );
+            } else if (oxygenWarning === 1) {
+                setAlert(
+                    "oxygenAlert", "oxygenStatus",
+                    "LOW OXYGEN — Check immediately", "danger"
+                );
+            } else {
+                setAlert(
+                    "oxygenAlert", "oxygenStatus",
+                    "Oxygen alert not triggered", "normal"
+                );
+            }
+
+            if (latest.field5 === "" || latest.field5 == null) {
+                setAlert(
+                    "temperatureAlert", "status",
+                    "No alert data available", "warning"
+                );
+            } else if (temperatureWarning === 1) {
+                setAlert(
+                    "temperatureAlert", "status",
+                    "HIGH TEMPERATURE — Check immediately", "danger"
+                );
+            } else {
+                setAlert(
+                    "temperatureAlert", "status",
+                    "Temperature alert not triggered", "normal"
+                );
+            }
+
+            if (latest.field6 === "" || latest.field6 == null) {
+                setAlert(
+                    "heartAlert", "heartStatus",
+                    "No heart-rate status available", "warning"
+                );
+            } else if (heartStatus === -1) {
+                setAlert(
+                    "heartAlert", "heartStatus",
+                    "LOW HEART RATE", "danger"
+                );
+            } else if (heartStatus === 1) {
+                setAlert(
+                    "heartAlert", "heartStatus",
+                    "HIGH HEART RATE", "danger"
+                );
+            } else if (heartStatus === 0) {
+                setAlert(
+                    "heartAlert", "heartStatus",
+                    "Heart rate status normal", "normal"
+                );
+            } else {
+                setAlert(
+                    "heartAlert", "heartStatus",
+                    "Unknown heart-rate status", "warning"
+                );
+            }
+
+            updateCharts(feeds);
+
+            const lastUpdate = new Date(latest.created_at);
+
+            status.textContent =
+                "Connected. Last reading: " +
+                (Number.isNaN(lastUpdate.getTime())
+                    ? "time unavailable"
+                    : lastUpdate.toLocaleString()) +
+                ". Refreshes every 20 seconds.";
+
+        } catch (error) {
+            console.error("ThingSpeak error:", error);
+
+            status.textContent =
+                "Could not load data: " + error.message +
+                " Check your channel access and internet connection.";
+        } finally {
+            requestInProgress = false;
+        }
+    }
+
+    function startMonitoring() {
+        if (refreshTimer !== null) {
+            clearInterval(refreshTimer);
+        }
+
+        loadData();
+
+        refreshTimer = setInterval(
+            loadData,
+            REFRESH_INTERVAL
+        );
+    }
+
+    document.getElementById("connectButton")
+        .addEventListener("click", startMonitoring);
+
+    // Automatically attempt to connect using the default channel ID.
+    startMonitoring();
+</script>
+</body>
+</html>
