@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ElderCare Monitor — Demo</title>
+<style>
+:root{font-family:Inter,system-ui,Arial,sans-serif;color:#17252a;background:#f4f7f6}
+*{box-sizing:border-box}body{margin:0}header{background:#123c3a;color:white;padding:22px 5vw;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:1.35rem;margin:0}header p{margin:5px 0 0;color:#cfe4de;font-size:.9rem}.wrap{max-width:1120px;margin:26px auto;padding:0 18px}
+.notice{padding:12px 14px;background:#fff5d8;border:1px solid #eed58a;border-radius:12px;margin-bottom:18px;font-size:.92rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.card{background:white;border:1px solid #e1e9e6;border-radius:16px;padding:18px;box-shadow:0 4px 18px #173e3a0a}
+.metric{font-size:2rem;font-weight:750;margin:8px 0}.muted{color:#647773;font-size:.9rem}.tag{display:inline-block;border-radius:99px;padding:5px 9px;background:#e2f4e9;color:#17683b;font-size:.8rem}
+section{margin-top:20px}h2{font-size:1.1rem;margin:0 0 14px}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}input,select,button{font:inherit;padding:10px 12px;border:1px solid #cbd9d5;border-radius:9px;background:white}button{background:#176b60;color:white;border:0;cursor:pointer}button.secondary{background:#e7efec;color:#173c37}table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid #edf1ef}th{color:#61716d}footer{color:#687975;font-size:.85rem;padding:24px 0}
+</style></head>
+<body>
+<header><div><h1>♥ ElderCare Monitor</h1><p>Caregiver dashboard · local demo</p></div><span class="tag">DEMO MODE</span></header>
+<main class="wrap">
+<div class="notice"><b>Demo only:</b> These are illustrative readings and sample profiles. This page does not authenticate users, store records securely, or read live sensor data. Do not enter real personal or medical information.</div>
+<section><H2>Create Profile</H2><div class+"grid">
+    <button id="add">Add demo profile</button> <break><input id="name" placeholder="New sample profile name"><input id="age" type="number" min="1" max="120" placeholder="Age">
+    </break>
+</div></section>
+<section class="card">
+<h2>Sample elderly profiles</h2>
+<div class="controls"><select id="profile"><option value="0">Anita Sharma · Demo ID E-001</option><option value="1">Ramesh Patil · Demo ID E-002</option></select></div>
+    <div></div>
+<div class="muted" id="profileInfo">Demo profile selected. No real account is created.</div>
+</section>
+<section><h2>Latest readings</h2><div class="grid">
+<div class="card"><div class="muted">Temperature</div><div class="metric" id="temp">36.6 °C</div><span class="tag">Sample value</span></div>
+<div class="card"><div class="muted">Heart rate</div><div class="metric" id="hr">72 BPM</div><span class="tag">Simulated value</span></div>
+<div class="card"><div class="muted">SpO₂</div><div class="metric" id="spo2">97%</div><span class="tag">Simulated value</span></div>
+<div class="card"><div class="muted">Last update</div><div class="metric" style="font-size:1.2rem" id="time">Demo data</div><span class="tag">Not live</span></div>
+</div></section>
+<section class="card"><h2>Reading history</h2><div class="controls"><button id="addRecord">Add illustrative sample reading</button><button class="secondary" id="export">Export demo CSV</button></div>
+<div style="overflow:auto"><table><thead><tr><th>Date/time</th><th>Profile</th><th>Temp °C</th><th>Heart rate</th><th>SpO₂</th><th>Source</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+<footer>For a real application, add Firebase Authentication, per-user database security rules, consent and access controls. Sensor readings and alerts must be clinically validated before any care use.</footer>
+</main>
+<script>
+const profiles=[{name:"Anita Sharma",age:72,id:"E-001"},{name:"Ramesh Patil",age:68,id:"E-002"}];
+let selected=0,records=[
+{date:"2026-10-22 09:00",profile:"Anita Sharma",temp:36.6,hr:72,spo2:97},
+{date:"2026-10-22 08:45",profile:"Anita Sharma",temp:36.5,hr:70,spo2:98},
+{date:"2026-10-22 08:30",profile:"Ramesh Patil",temp:36.7,hr:74,spo2:97}
+];
+const $=id=>document.getElementById(id);
+function renderProfile(){let p=profiles[selected];$("profileInfo").textContent=`${p.name} · Age ${p.age} · ${p.id} — sample data only`;let r=records.find(x=>x.profile===p.name)||records[0];$("temp").textContent=r.temp+" °C";$("hr").textContent=r.hr+" BPM";$("spo2").textContent=r.spo2+"%";$("time").textContent=r.date;renderRows()}
+function renderRows(){ $("rows").innerHTML=records.filter(r=>r.profile===profiles[selected].name).map(r=>`<tr><td>${r.date}</td><td>${r.profile}</td><td>${r.temp}</td><td>${r.hr} BPM</td><td>${r.spo2}%</td><td>Demo</td></tr>`).join("")||'<tr><td colspan="6">No sample records yet.</td></tr>'}
+$("profile").addEventListener("change",e=>{selected=+e.target.value;renderProfile()});
+$("add").onclick=()=>{let name=$("name").value.trim(),age=Number($("age").value);if(!name||!age||age<1||age>120){alert("Enter a sample name and age from 1 to 120.");return}profiles.push({name,age,id:"DEMO-"+String(profiles.length+1).padStart(3,"0")});selected=profiles.length-1;$("profile").innerHTML=profiles.map((p,i)=>`<option value="${i}">${p.name} · Demo ID ${p.id}</option>`).join("");$("profile").value=selected;$("name").value="";$("age").value="";renderProfile()};
+$("addRecord").onclick=()=>{let p=profiles[selected];records.unshift({date:new Date().toLocaleString(),profile:p.name,temp:(36.3+Math.random()*.8).toFixed(1),hr:Math.round(65+Math.random()*20),spo2:Math.round(95+Math.random()*4)});renderProfile()};
+$("export").onclick=()=>{let data=[["Date/time","Profile","Temperature C","Heart rate BPM","SpO2 percent"],...records.filter(r=>r.profile===profiles[selected].name).map(r=>[r.date,r.profile,r.temp,r.hr,r.spo2])];let csv=data.map(row=>row.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="eldercare-demo-records.csv";a.click();URL.revokeObjectURL(a.href)};
+renderProfile();
+</script></body></html>

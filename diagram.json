@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "author": "Elderly Health Monitoring Demo",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ds18b20",
+      "id": "temp1",
+      "top": -120,
+      "left": 300,
+      "attrs": {
+        "temperature": "36.6"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot1",
+      "top": 120,
+      "left": 300,
+      "attrs": {
+        "value": "2048"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzz1",
+      "top": 260,
+      "left": 300,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd1",
+      "top": -150,
+      "left": -240,
+      "attrs": {
+        "pins": "i2c"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX0",
+      "$serialMonitor:RX",
+      "green",
+      []
+    ],
+    [
+      "esp:RX0",
+      "$serialMonitor:TX",
+      "green",
+      []
+    ],
+    [
+      "temp1:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "temp1:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "temp1:DQ",
+      "esp:D23",
+      "green",
+      []
+    ],
+    [
+      "pot1:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pot1:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pot1:SIG",
+      "esp:D35",
+      "green",
+      []
+    ],
+    [
+      "buzz1:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "buzz1:2",
+      "esp:D25",
+      "green",
+      []
+    ],
+    [
+      "lcd1:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "lcd1:VCC",
+      "esp:VIN",
+      "red",
+      []
+    ],
+    [
+      "lcd1:SDA",
+      "esp:D21",
+      "green",
+      []
+    ],
+    [
+      "lcd1:SCL",
+      "esp:D22",
+      "green",
+      []
+    ]
+  ]
+}
